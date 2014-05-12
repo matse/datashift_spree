@@ -15,7 +15,7 @@ module DataShift
     class ProductLoader < SpreeBaseLoader
 
       # Options
-      #  
+      #
       #  :reload           : Force load of the method dictionary for object_class even if already loaded
       #  :verbose          : Verbose logging and to STDOUT
       #
@@ -40,20 +40,20 @@ module DataShift
         #puts "Product Loader -  Load Options", options.inspect
 
         # In >= 1.1.0 Image moved to master Variant from Product so no association called Images on Product anymore
-        
+
         # Non Product/database fields we can still  process
         @we_can_process_these_anyway =  ['images',  "variant_price", "variant_sku"]
-          
+
         # In >= 1.3.0 price moved to master Variant from Product so no association called Price on Product anymore
         # taking care of it here, means users can still simply just include a price column
         @we_can_process_these_anyway << 'price' if(DataShift::SpreeHelper::version.to_f >= 1.3 )
-      
+
         if(DataShift::SpreeHelper::version.to_f > 1 )
           options[:force_inclusion] = options[:force_inclusion] ? ([ *options[:force_inclusion]] + @we_can_process_these_anyway) : @we_can_process_these_anyway
         end
 
         logger.info "Product load using forced operators: [#{options[:force_inclusion]}]" if(options[:force_inclusion])
-        
+
         super(file_name, options)
       end
 
@@ -67,9 +67,9 @@ module DataShift
 
         current_method_detail = @populator.current_method_detail
         current_value         = @populator.current_value
-        
+
         logger.debug "Processing value: [#{current_value}]"
-        
+
         # Special cases for Products, generally where a simple one stage lookup won't suffice
         # otherwise simply use default processing from base class
         if(current_value && (current_method_detail.operator?('variants') || current_method_detail.operator?('option_types')) )
@@ -108,7 +108,7 @@ module DataShift
           else
             super
           end
-          
+
         elsif(current_method_detail.operator?('variant_sku') && current_value)
 
           puts "SKU SKU SKU"
@@ -130,7 +130,7 @@ module DataShift
           else
             super
           end
-          
+
         elsif(current_value && (current_method_detail.operator?('count_on_hand') || current_method_detail.operator?('on_hand')) )
 
 
@@ -193,12 +193,12 @@ module DataShift
       #  '|' seperates Variants
       #
       #   ';' list of option values
-      #  Examples : 
-      #  
+      #  Examples :
+      #
       #     mime_type:jpeg;print_type:black_white|mime_type:jpeg|mime_type:png, PDF;print_type:colour
       #
       def add_options
-      
+
         # TODO smart column ordering to ensure always valid by time we get to associations
         save_if_new
 
@@ -206,9 +206,9 @@ module DataShift
 
         variants = get_each_assoc
 
-        # example line becomes :  
-        #   1) mime_type:jpeg;print_type:black_white  
-        #   2) mime_type:jpeg  
+        # example line becomes :
+        #   1) mime_type:jpeg;print_type:black_white
+        #   2) mime_type:jpeg
         #   3) mime_type:png, PDF;print_type:colour
 
         variants.each do |per_variant|
@@ -233,7 +233,7 @@ module DataShift
               end
               puts "Created missing OptionType #{option_type.inspect}"
             end
-                      
+
             # OptionTypes must be specified first on Product to enable Variants to be created
             # TODO - is include? very inefficient ??
             @load_object.option_types << option_type unless @load_object.option_types.include?(option_type)
@@ -252,11 +252,11 @@ module DataShift
           # Now create set of Variants, some of which maybe composites
           # Find the longest set of OVs to use as base for combining with the rest
           sorted_map = optiontype_vlist_map.sort_by { |k,v| v.size }.reverse
-       
+
           # [ [mime, ['pdf', 'jpeg', 'gif']], [print_type, ['black_white']] ]
-          
+
           lead_option_type, lead_ovalues = sorted_map.shift
-          
+
           # TODO .. benchmarking to find most efficient way to create these but ensure Product.variants list
           # populated .. currently need to call reload to ensure this (seems reqd for Spree 1/Rails 3, wasn't required b4
           lead_ovalues.each do |ovname|
@@ -264,17 +264,17 @@ module DataShift
             ov_list = []
 
             ovname.strip!
-            
+
             ov = @@option_value_klass.find_or_create_by_name_and_option_type_id(ovname, lead_option_type.id, :presentation => ovname.humanize)
 
             ov_list << ov if ov
- 
+
             # Process rest of array of types => values
-            sorted_map.each do |ot, ovlist| 
+            sorted_map.each do |ot, ovlist|
               ovlist.each do |for_composite|
-                
+
                 for_composite.strip!
-                
+
                 ov = @@option_value_klass.find_or_create_by_name_and_option_type_id(for_composite, ot.id, :presentation => for_composite.humanize)
 
                 ov_list << ov if(ov)
@@ -282,19 +282,19 @@ module DataShift
             end
 
             unless(ov_list.empty?)
-              
+
               puts "Creating Variant from OptionValue(s) #{ov_list.collect(&:name).inspect}" if(verbose)
-              
+
               i = @load_object.variants.size + 1
 
               # This one line seems to works for 1.1.0 - 3.2 but not 1.0.0 - 3.1 ??
-							if(SpreeHelper::version.to_f >= 1.1)
-							  variant = @load_object.variants.create( :sku => "#{@load_object.sku}_#{i}", :price => @load_object.price, :weight => @load_object.weight, :height => @load_object.height, :width => @load_object.width, :depth => @load_object.depth)
-							else
-							  variant = @@variant_klass.create( :product => @load_object, :sku => "#{@load_object.sku}_#{i}", :price => @load_object.price)
-							end
+              if(SpreeHelper::version.to_f >= 1.1)
+                variant = @load_object.variants.create( :sku => "#{@load_object.sku}_#{i}", :price => @load_object.price, :weight => @load_object.weight, :height => @load_object.height, :width => @load_object.width, :depth => @load_object.depth)
+              else
+                variant = @@variant_klass.create( :product => @load_object, :sku => "#{@load_object.sku}_#{i}", :price => @load_object.price)
+              end
 
-              variant.option_values << ov_list if(variant)    
+              variant.option_values << ov_list if(variant)
             end
           end
 

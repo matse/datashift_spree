@@ -16,8 +16,8 @@ require 'datashift_spree'
 
 require 'spree_helper'
 
-module DatashiftSpree 
-  
+module DatashiftSpree
+
   class Load < Thor
 
     include DataShift::Logging

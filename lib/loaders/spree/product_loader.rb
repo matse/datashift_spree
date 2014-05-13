@@ -288,7 +288,10 @@ module DataShift
               i = @load_object.variants.size + 1
 
               # This one line seems to works for 1.1.0 - 3.2 but not 1.0.0 - 3.1 ??
-              if(SpreeHelper::version.to_f >= 1.1)
+              # it is not working for my ruby2.1.1 + rails4.0.4 + spree2.2.1 project
+              # #<ActiveRecord::RecordNotSaved: You cannot call create unless the parent is saved>
+              # TODO: remove && false and fix the problem
+              if(SpreeHelper::version.to_f >= 1.1 && false)
                 variant = @load_object.variants.create( :sku => "#{@load_object.sku}_#{i}", :price => @load_object.price, :weight => @load_object.weight, :height => @load_object.height, :width => @load_object.width, :depth => @load_object.depth)
               else
                 variant = @@variant_klass.create( :product => @load_object, :sku => "#{@load_object.sku}_#{i}", :price => @load_object.price)

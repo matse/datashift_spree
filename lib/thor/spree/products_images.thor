@@ -54,6 +54,7 @@ module DatashiftSpree
         loader.populator.set_default_value('cost_price', 0.0 )
         loader.populator.set_default_value('price', 0.0 )
         loader.populator.set_default_value('shipping_category_id', Spree::ShippingCategory.first.id )
+        loader.populator.set_default_value('link', '' )
       end
 
       loader.set_prefix('sku', options[:sku_prefix] ) if(options[:sku_prefix])
